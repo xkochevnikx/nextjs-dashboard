@@ -9,6 +9,7 @@ import {
   Revenue,
 } from './definitions';
 import { formatCurrency } from './utils';
+import { unstable_noStore as noStore } from 'next/cache';
 
 export async function fetchRevenue() {
   // Add noStore() here prevent the response from being cached.
@@ -24,6 +25,7 @@ export async function fetchRevenue() {
     const data = await sql<Revenue>`SELECT * FROM revenue`;
 
     // console.log('Data fetch completed after 3 seconds.');
+    noStore();
 
     return data.rows;
   } catch (error) {
@@ -40,6 +42,7 @@ export async function fetchLatestInvoices() {
       JOIN customers ON invoices.customer_id = customers.id
       ORDER BY invoices.date DESC
       LIMIT 5`;
+    noStore();
 
     const latestInvoices = data.rows.map((invoice) => ({
       ...invoice,
@@ -74,6 +77,7 @@ export async function fetchCardData() {
     const numberOfCustomers = Number(data[1].rows[0].count ?? '0');
     const totalPaidInvoices = formatCurrency(data[2].rows[0].paid ?? '0');
     const totalPendingInvoices = formatCurrency(data[2].rows[0].pending ?? '0');
+    noStore();
 
     return {
       numberOfCustomers,
@@ -115,6 +119,7 @@ export async function fetchFilteredInvoices(
       ORDER BY invoices.date DESC
       LIMIT ${ITEMS_PER_PAGE} OFFSET ${offset}
     `;
+    noStore();
 
     return invoices.rows;
   } catch (error) {
@@ -135,6 +140,7 @@ export async function fetchInvoicesPages(query: string) {
       invoices.date::text ILIKE ${`%${query}%`} OR
       invoices.status ILIKE ${`%${query}%`}
   `;
+    noStore();
 
     const totalPages = Math.ceil(Number(count.rows[0].count) / ITEMS_PER_PAGE);
     return totalPages;
@@ -161,6 +167,7 @@ export async function fetchInvoiceById(id: string) {
       // Convert amount from cents to dollars
       amount: invoice.amount / 100,
     }));
+    noStore();
 
     return invoice[0];
   } catch (error) {
@@ -178,6 +185,7 @@ export async function fetchCustomers() {
       FROM customers
       ORDER BY name ASC
     `;
+    noStore();
 
     const customers = data.rows;
     return customers;
@@ -206,6 +214,7 @@ export async function fetchFilteredCustomers(query: string) {
 		GROUP BY customers.id, customers.name, customers.email, customers.image_url
 		ORDER BY customers.name ASC
 	  `;
+    noStore();
 
     const customers = data.rows.map((customer) => ({
       ...customer,
@@ -223,6 +232,8 @@ export async function fetchFilteredCustomers(query: string) {
 export async function getUser(email: string) {
   try {
     const user = await sql`SELECT * FROM users WHERE email=${email}`;
+    noStore();
+
     return user.rows[0] as User;
   } catch (error) {
     console.error('Failed to fetch user:', error);
